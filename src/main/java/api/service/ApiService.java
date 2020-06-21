@@ -11,19 +11,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collection;
-import java.util.List;
 
 @Service
 public class ApiService {
 
     private RestTemplate restTemplate;
-    List<String> cookie;
+    String sessionId;
 
     public ApiService(RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder.build();
     }
 
-    public List<String> getAllUsers() {
+    public Collection<User> getAllUsers() {
 
         ResponseEntity<Collection<User>> responseEntity = restTemplate.exchange(
                 "http://91.241.64.178:7081/api/users",
@@ -32,15 +31,18 @@ public class ApiService {
                 new ParameterizedTypeReference<Collection<User>>() {}
         );
 
-        cookie = responseEntity.getHeaders().get("Set-Cookie");
+        sessionId = responseEntity
+                .getHeaders()
+                .get("Set-Cookie").get(0)
+                .substring(0, 43);
 
-        return cookie;
+        return responseEntity.getBody();
     }
 
     public String addUser(User user) {
 
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.put("Set-Cookie", cookie);
+        httpHeaders.add("Cookie", sessionId);
 
         ResponseEntity<String> responseEntity = restTemplate.exchange(
                 "http://91.241.64.178:7081/api/users",
@@ -55,7 +57,7 @@ public class ApiService {
     public String changeUser(User user) {
 
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.put("Set-Cookie", cookie);
+        httpHeaders.add("Cookie", sessionId);
 
         ResponseEntity<String> responseEntity = restTemplate.exchange(
                 "http://91.241.64.178:7081/api/users",
@@ -70,7 +72,7 @@ public class ApiService {
     public String delete(User user) {
 
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.put("Set-Cookie", cookie);
+        httpHeaders.add("Cookie", sessionId);
 
         ResponseEntity<String> responseEntity = restTemplate.exchange(
                 "http://91.241.64.178:7081/api/users/" + user.getId(),
